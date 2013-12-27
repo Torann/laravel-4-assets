@@ -89,11 +89,7 @@ class Manager
 
         // Setup LESS
         $this->less = new lessc();
-        $this->less->registerFunction('image-url', function($arg) {
-            list($type, $delim, $content) = $arg;
-            $content[0] = 'url("' . asset($this->config['image_url'] . '/' . $content[0]) . '")';
-            return array($type, '', $content);
-        });
+        $this->less->registerFunction('image-url', array($this, 'lessImageURL'));
 	}
 
     /**
@@ -132,12 +128,32 @@ class Manager
     }
 
 	/**
+	 * Returns a full URL to the given asset.
+	 *
+	 * For example, on production passing '/images/umbrella.jpg' may return
+	 * '/images/umbrella-8b50d865ef2e3469be477e2745c888c5.jpg'
+	 *
+	 * @param string   $asset
+	 * @param bool     $absolute
+	 * @return string
+	 */
+	public function image($url, $absolute = false)
+	{
+		// Create fingerprint URL
+		if($this->config['fingerprint'] && $this->production) {
+			$url = $this->fingerprint($url);
+		}
+
+		return $url;
+	}
+
+	/**
 	 * Add from on of more collections
 	 *
 	 * @param  mixed    $collections
 	 * @param  string   $extensionType
 	 * @param  boolean  $production (used in the console)
-	 * @return string   $name
+	 * @return string
 	 */
 	public function render($collections, $extensionType, $production = false)
 	{
@@ -255,6 +271,18 @@ class Manager
         return $this;
     }
 
+    /**
+     * Custom LESS function to process images.
+     *
+     * @param  array  $arg
+     * @return array
+     */
+	public function lessImageURL($arg) {
+        list($type, $delim, $content) = $arg;
+        $content[0] = 'url("' . $this->image($this->config['image_url'] . '/' . $content[0]) . '")';
+        return array($type, '', $content);
+    }
+
 	/**
 	 * Process the development asset files
 	 *
@@ -350,6 +378,41 @@ class Manager
 		}
 
 		return $buffer;
+	}
+
+	/**
+	 * Create fingerprint for a given URL
+	 *
+	 * @param  string  $url
+	 * @return string
+	 */
+	public function fingerprint($url)
+	{
+		// Get MD5 for the file
+		if ($md5 = $this->getFileMD5($url)) {
+			$parts = pathinfo($url);
+			$dirname = ends_with($parts['dirname'], '/') ? $parts['dirname'] : $parts['dirname'] . '/';
+			$url = "{$dirname}{$parts['filename']}-$md5.{$parts['extension']}";
+		}
+
+		return $url;
+	}
+
+	/**
+	 * Calculates the md5 hash of a given url
+	 *
+	 * @param  string  $url
+	 * @return string|null
+	 */
+	public function getFileMD5($url)
+	{
+		if (starts_with($url, '/')) {
+			$url = substr($url, 1);
+		}
+
+		if (File::exists($url) && File::isFile($url)) {
+			return md5_file($url);
+		}
 	}
 
     /**

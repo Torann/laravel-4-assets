@@ -116,4 +116,22 @@ return array(
 
     'gzip' => false,
 
+    /*
+    |--------------------------------------------------------------------------
+    | Fingerprinting
+    |--------------------------------------------------------------------------
+    |
+    | Fingerprinting is a technique that makes the name of a file dependent
+    | on the contents of the file. When the file contents change, the filename
+    | is also changed. For content that is static or infrequently changed, this
+    | provides an easy way to tell whether two versions of a file are identical,
+    | even across different servers or deployment dates.
+    |
+    | NOTE: To enable ensure you add the code snipped in the readme to
+    |       your ".htaccess" file in the public directory.
+    |
+    */
+
+    'fingerprint' => true,
+
 );

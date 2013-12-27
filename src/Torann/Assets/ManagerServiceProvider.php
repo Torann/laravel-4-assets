@@ -72,6 +72,7 @@ class ManagerServiceProvider extends ServiceProvider {
     {
         $blade = $this->app['view']->getEngineResolver()->resolve('blade')->getCompiler();
 
+        // JavaScripts extension
         $blade->extend(function($value, $compiler)
         {
             $matcher = $compiler->createMatcher('javascripts');
@@ -79,11 +80,20 @@ class ManagerServiceProvider extends ServiceProvider {
             return preg_replace($matcher, '$1<?php echo Assets::javascript$2; ?>', $value);
         });
 
+        // Stylesheets extension
         $blade->extend(function($value, $compiler)
         {
             $matcher = $compiler->createMatcher('stylesheets');
 
             return preg_replace($matcher, '$1<?php echo Assets::stylesheet$2; ?>', $value);
+        });
+
+        // Image Asset extension
+        $blade->extend(function($value, $compiler)
+        {
+            $matcher = $compiler->createMatcher('image_url');
+
+            return preg_replace($matcher, '$1<?php echo Assets::image$2; ?>', $value);
         });
     }
 

@@ -1,4 +1,4 @@
-# Asset Management for Laravel 4 - Super Alpha
+# Asset Management for Laravel 4 - Alpha
 
 [![Latest Stable Version](https://poser.pugx.org/torann/assets/v/stable.png)](https://packagist.org/packages/torann/assets) [![Total Downloads](https://poser.pugx.org/torann/assets/downloads.png)](https://packagist.org/packages/torann/assets)
 
@@ -36,7 +36,7 @@ Then register the service provider
 
 > There is no need to add the Facade, the package will add it for you.
 
-Create configuration file using artisan
+Publish the configuration file using artisan:
 
 ~~~
 $ php artisan config:publish torann/assets
@@ -44,10 +44,28 @@ $ php artisan config:publish torann/assets
 
 This will create the **app/config/packages/torann/assets/config.php** file.
 
-Finally create the directory specified as "public_dir" in the config file and give it full writing permissions.
+## Fingerprints
+
+Fingerprinting is a technique that makes the name of a file dependent on the contents of the file. When the file contents change, the filename is also changed. For content that is static or infrequently changed, this provides an easy way to tell whether two versions of a file are identical, even across different servers or deployment dates.
+
+Add the following to your .htaccess file **before** the Laravel rewrite rule:
+
+```ApacheConf
+# ------------------------------------------------------------------------------
+# | Remove fingerprint hash from request URLs if present                       |
+# ------------------------------------------------------------------------------
+<IfModule mod_rewrite.c>
+    RewriteRule ^(.*)-[0-9a-f]{32}(\.(jpg|jpeg|png|gif|svg))$ $1$2 [DPI]
+</IfModule>
+```
+
+To disable this function, change the ``fingerprint`` setting to **false** in the config file.
 
 ## Templating
-The assets can be printed out in a (blade) template by using
+
+### Stylesheets and JavaScript 
+
+Assets can be printed out in a (blade) template by using
 
 ~~~php
 // prints only the "frontend" group
@@ -55,6 +73,7 @@ The assets can be printed out in a (blade) template by using
 
 // prints the "frontend" and "mygroup" groups
 @stylesheets(array('frontend', 'mygroup'))
+
 ~~~
 
 and the same syntax is used for the scripts
@@ -62,6 +81,16 @@ and the same syntax is used for the scripts
 ~~~php
 @javascripts('frontend')
 ~~~
+
+### Images 
+
+Image assets can be printed out in a (blade) template by using
+
+~~~php
+@image_url('frontend')
+~~~
+
+The image will contain a fingerprint (see Fingerprints above) and in the future CDN.
 
 ## Artisan commands
 
@@ -77,3 +106,8 @@ Build and publishes the registered assets
 php artisan assets:build
 ~~~
 
+## Change Log
+
+#### v0.1.1 Alpha
+
+- Added the ability to add fingerprints to images 
