@@ -1,6 +1,10 @@
 # Asset Management for Laravel 4 - Super Alpha
 
+[![Latest Stable Version](https://poser.pugx.org/torann/assets/v/stable.png)](https://packagist.org/packages/torann/assets) [![Total Downloads](https://poser.pugx.org/torann/assets/downloads.png)](https://packagist.org/packages/torann/assets)
+
 The Torann/Assets package is meant to simplify the creation and maintenance of the essential assets of a Laravel 4 based application.
+
+----------
 
 ## Features
 
@@ -8,8 +12,6 @@ The Torann/Assets package is meant to simplify the creation and maintenance of t
 I do NOT plan to add support for other types like Coffeescript simply because I want to keep the package footprint as small as possible.
 * **Combining and minifying** (any combination of the two) are fully supported
 * Simple but effective **caching** support is provided.
-This avoids generation of the assets on every request.
-Caching needs to be turned on in the config (since you probably only want to do this on production).
 * **Asset groups**
 
 ## Installation
