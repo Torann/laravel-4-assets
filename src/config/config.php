@@ -78,16 +78,7 @@ return array(
 	*/
 
 	'collections' => array(
-		// jQuery (CDN)
-		'jquery' => [
-			'//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js'
-		],
 
-		// Frontend
-		'frontend' => [
-			'frontend.less',
-			'frontend/pages/members.less'
-		]
 	),
 
     /*
