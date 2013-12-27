@@ -33,7 +33,7 @@ class ManagerServiceProvider extends ServiceProvider {
 		$this->package('torann/assets');
 
 		// Add 'Assets' facade alias
-		AliasLoader::getInstance()->alias('Assets', 'Torann\Assets\Facades\Assets');
+		AliasLoader::getInstance()->alias('Assets', 'Torann\Assets\Facade');
 	}
 
 	/**

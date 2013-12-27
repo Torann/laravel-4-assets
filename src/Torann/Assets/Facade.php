@@ -1,8 +1,8 @@
-<?php namespace Torann\Assets\Facades;
+<?php namespace Torann\Assets;
 
-use Illuminate\Support\Facades\Facade;
+use Illuminate\Support\Facades\Facade as IlluminateFacade;
 
-class Assets extends Facade {
+class Facade extends IlluminateFacade {
 
 	/**
 	 * Get the registered name of the component.
