@@ -4,7 +4,7 @@ return array(
 
     /*
     |--------------------------------------------------------------------------
-    | paths
+    | Paths
     |--------------------------------------------------------------------------
     |
     | These are the directories we search for files in.
@@ -133,5 +133,51 @@ return array(
     */
 
     'fingerprint' => true,
+
+    /*
+    |--------------------------------------------------------------------------
+    | CDN URL
+    |--------------------------------------------------------------------------
+    |
+    | To use a caching proxy like cloudfront on other environments, specify
+    | the fallback URL to be prepended to asset URLs here. CDN URLs only work
+    | in production environments. Read the readme for more info.
+    |
+    | MORE INFO: https://github.com/Torann/laravel-4-assets
+    |
+    | NOTE: Omit the protocol so that http or https will be selected
+    |       automatically by the browser; and omit the trailing slash because
+    |       it's part of the asset URL that will be appended.
+    |
+    | Example:
+    |   'cdn_url' => '//cdn.mysite.com',
+    |
+    */
+
+    'cdn_url' => '',
+
+    /*
+    |--------------------------------------------------------------------------
+    | CDN File Types
+    |--------------------------------------------------------------------------
+    |
+    | Override the CDN URL for specific file types.
+    |
+    | Example:
+    |   'cdn_filetypes' => array(
+    |       'jpg'  => '//media.mysite.com',
+    |       'gif'  => '//media.mysite.com',
+    |       'png'  => '//media.mysite.com',
+    |       'ico'  => '//media.mysite.com',
+    |       'flv'  => '//media.mysite.com',
+    |       'css'  => '//assets.mysite.com',
+    |       'js'   => '//assets.mysite.com',
+    |       'swf'  => '//media.mysite.com'
+    |   ),
+    */
+
+    'cdn_filetypes' => array(
+
+    ),
 
 );

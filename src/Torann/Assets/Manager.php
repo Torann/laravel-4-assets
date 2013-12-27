@@ -144,7 +144,7 @@ class Manager
 			$url = $this->fingerprint($url);
 		}
 
-		return $url;
+		return $this->createCDNPath($url);
 	}
 
 	/**
@@ -172,10 +172,11 @@ class Manager
 
 			foreach ($this->collections[$collection] as $asset)
 			{
-				$info = pathinfo($asset);
-				if(isset($info['extension']))
+				$extension = strtolower(pathinfo($asset, PATHINFO_EXTENSION));
+
+				if($extension)
 				{
-					if( in_array(strtolower($info['extension']), $this->allowedExtensions[$extensionType]) )
+					if( in_array($extension, $this->allowedExtensions[$extensionType]) )
 					{
 						// Make the link nicer for our local boys
 						if( ! $this->isRemoteLink($asset))
@@ -322,10 +323,9 @@ class Manager
 		// Filename
 		$fileExt 	= ($type === 'style' ? '.css' : '.js');
 		$file 		= $name . md5(implode($this->assets)).$fileExt;
-		$timestamp 	= null; //(intval($this->production) > 1) ? '?' . $this->production : null;
 
 		// Paths
-		$relative_path = "{$this->config[$type.'_dir']}/$file" . $timestamp;
+		$relative_path = $this->createCDNPath("{$this->config[$type.'_dir']}/$file");
 		$absolute_path =  $this->public_dir . DIRECTORY_SEPARATOR . $this->config[$type.'_dir'] . DIRECTORY_SEPARATOR . $file;
 
 		// If pipeline exist return it
@@ -414,6 +414,33 @@ class Manager
 			return md5_file($url);
 		}
 	}
+
+    /**
+     * Get the number or name of the current CDN-domain.
+     *
+     * @param string $filePath   The path of the file to get the static domain for
+     * @return string            Returns the static domain for the given file path.
+     */
+    protected function createCDNPath($filePath)
+    {
+    	// Ignore remote assets and non-production servers
+        if ( $this->isRemoteLink($filePath) || !$this->production)
+        {
+            return $filePath;
+        }
+
+        $baseURL = $this->cdn_url;
+
+        $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+
+        // Get CDN by file type
+        if (isset($this->cdn_filetypes[$extension]) && $this->cdn_filetypes[$extension])
+        {
+            $baseURL = $this->cdn_filetypes[$extension];
+        }
+
+        return rtrim($baseURL, '/') . '/' . ltrim($filePath, '/');
+    }
 
     /**
      * If Gzipping is enabled the the zlib extension is loaded we'll Gzip the contents
