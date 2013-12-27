@@ -16,6 +16,7 @@ I do NOT plan to add support for other types like Coffeescript simply because I 
 
 ## Installation
 
+- [Assets on Packagist](https://packagist.org/packages/torann/assets)
 - [Assets on GitHub](https://github.com/torann/laravel-4-assets)
 
 To get the latest version of Assets simply require it in your `composer.json` file.
