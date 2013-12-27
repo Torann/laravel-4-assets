@@ -162,7 +162,7 @@ class Manager
 		// Reset tracked
 		$this->assets = array();
 
-		$filename = '';
+		$identifier = '';
 
 		foreach ($collections as $collection)
 		{
@@ -191,7 +191,7 @@ class Manager
 				}
 			}
 
-			$filename .= "$collection-";
+			$identifier .= "$collection-";
 
 		}
 
@@ -202,7 +202,7 @@ class Manager
 
 		// Production render
 		if($this->production || $production) {
-			return $this->buildAsProduction($filename, $extensionType);
+			return $this->buildAsProduction($identifier, $extensionType);
 		}
 
 		// Load each asset
