@@ -13,7 +13,7 @@ class ManagerServiceProvider extends ServiceProvider {
      *
      * @var string
      */
-    const VERSION = '0.1.0 Alpha';
+    const VERSION = '0.1.0-Alpha';
 
 	/**
 	 * Indicates if loading of the provider is deferred.
