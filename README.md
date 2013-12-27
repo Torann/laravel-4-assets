@@ -8,11 +8,21 @@ The Torann/Assets package is meant to simplify the creation and maintenance of t
 
 ## Features
 
-* **Supported asset types**: "**less**", "**css**"" and "**javascript**" files.
-I do NOT plan to add support for other types like Coffeescript simply because I want to keep the package footprint as small as possible.
-* **Combining and minifying** (any combination of the two) are fully supported
-* Simple but effective **caching** support is provided.
-* **Asset groups**
+* Supported asset types: LESS, CSS, and JavaScript files.
+* Combining and minifying (any combination of the two) are fully supported
+* Supports local (including packages) or remote assets
+* Pre-compress assets with Gzip
+* Organize assets into collections
+* Build assets individually within your development environment to maintain debug tool friendliness.
+* Asset fingerprinting (with basic support for images)
+* Image asset support in LESS
+
+> I do **NOT** plan to add support for other asset types like Coffeescript simply because I want to keep the package footprint as small as possible.
+
+## To-Dos
+
+* Deploy built collections to remote Content Delivery Network
+* More robust support for remotely hosted assets
 
 ## Installation
 
@@ -36,13 +46,48 @@ Then register the service provider
 
 > There is no need to add the Facade, the package will add it for you.
 
-Publish the configuration file using artisan:
+## Configuration
+
+To create a custom package config run
 
 ~~~
 $ php artisan config:publish torann/assets
 ~~~
 
 This will create the **app/config/packages/torann/assets/config.php** file.
+
+### Paths
+
+```php
+'paths' => array(
+	'app/assets/javascripts',
+	'app/assets/stylesheets',
+	'public/packages'
+),
+```
+These are the directories we search for files in. You can think of this like PATH environment variable on your OS. We search for files in the path order listed below.
+
+### Image Location
+
+```php
+'image_url' => '/assets/images',
+```
+The directory, relative to "public" where the image assets will be published to.
+
+### Local assets directories
+
+```php
+'style_dir' => 'assets/stylesheets',
+'script_dir' => 'assets/javascripts',
+```
+Override defaul prefix folder for local assets. Don't use trailing slash!. They are relative to your public folder.
+
+### Gzip Built Collections
+
+```php
+'gzip' => false,
+```
+To get the most speed and compression out of this package you can enable Gzip for every collection that is built via the command line. This is applied to both collection builds and development builds.
 
 ## Fingerprints
 
@@ -61,36 +106,104 @@ Add the following to your .htaccess file **before** the Laravel rewrite rule:
 
 To disable this function, change the ``fingerprint`` setting to **false** in the config file.
 
-## Templating
+## Content Delivery Network (CDN)
 
-### Stylesheets and JavaScript 
+Overwrite relative URLs to point to a predefined CDN URL.
 
-Assets can be printed out in a (blade) template by using
+Update the ``cdn_url`` setting in the config file.
 
 ~~~php
-// prints only the "frontend" group
+'cdn_url' => '//cdn.mysite.com',
+~~~
+
+Register file types to override ``cdn_url`` setting.  
+
+~~~php
+'cdn_filetypes' => array(
+	'jpg'  => '//media.mysite.com',
+	'gif'  => '//media.mysite.com',
+	'png'  => '//media.mysite.com',
+	'flv'  => '//media.mysite.com'
+),
+~~~
+
+> **NOTE:** Omit the protocol so that *http* or *https* will be selected automatically by the browser; and omit the trailing slash because it's part of the asset URL that will be appended.
+
+
+## Collections
+
+A collection is a number of Stylesheets and/or JavaScript grouped together under a common identifier. A single identifier can contain a mix of Stylesheets and JavaScript.
+
+### Assets Outside The Public Directory
+
+You can add assets outside the public directory by relatively traversing out and into other directories.
+
+~~~php
+'wysiwyg' => [
+	'../vendors/wysihtml5/wysihtml5.css',
+	'../vendors/wysihtml5/wysihtml5.js',
+],
+~~~
+
+### Remotely Hosted Assets
+
+Using an asset that's remotely hosted, e.g., jQuery on the Google CDN, is as simple as providing the URL to the asset. When in a production environment the remote assets will be downloaded and saved locally.
+
+~~~php
+'bootstrap-cdn' => [
+	'//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css',
+	'//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-theme.min.css',
+	'//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js'
+]
+~~~
+
+## Using Collections In Views
+
+You can use the ``@stylesheets()`` and ``@javascripts()`` functions to display as many collections as you want.
+
+~~~php
 @stylesheets('frontend')
 
-// prints the "frontend" and "mygroup" groups
-@stylesheets(array('frontend', 'mygroup'))
-
+@javascripts('jquery')
 ~~~
 
-and the same syntax is used for the scripts
+
+You can also use the static ``Assets`` methods to display your collections.
 
 ~~~php
-@javascripts('frontend')
+{{ Assets::stylesheet('frontend') }}
+
+{{ Assets::javascript('jquery') }}
 ~~~
 
-### Images 
+## Displaying Images 
 
-Image assets can be printed out in a (blade) template by using
+You can use the ``@image_url()`` functions to display images.
 
 ~~~php
-@image_url('frontend')
+@image_url('backgrounds/clouds.png')
 ~~~
 
-The image will contain a fingerprint (see Fingerprints above) and in the future CDN.
+You can also use the static ``Assets`` methods to display your collections.
+
+~~~php
+{{ Assets::image('background/clouds.png') }}
+~~~
+
+The image will contain a fingerprint (see Fingerprints above) and a CDN URL if setup.
+
+## Image Support in LESS
+
+Fingerprinting and CDN support for image is also available in LESS using the custom function ``image-url``
+
+~~~LESS
+body {
+	background: image-url("backgrounds/clouds.png") no-repeat center 0;
+	&.nighttime {
+		background-image: image-url("backgrounds/clouds-night.png");
+	}
+}
+~~~
 
 ## Artisan commands
 
@@ -110,4 +223,5 @@ php artisan assets:build
 
 #### v0.1.1 Alpha
 
-- Added the ability to add fingerprints to images 
+- Added the ability to add fingerprints to images
+- Added basic support for CDNs 
