@@ -50,9 +50,9 @@ class BuildCommand extends Command {
      */
     public function fire()
     {
-        $this->input->getOption('force') and $this->builder->setForce(true);
+        $this->input->getOption('force') and $this->manager->setForce(true);
 
-        $this->input->getOption('gzip') and $this->builder->setGzip(true);
+        $this->input->getOption('gzip') and $this->manager->setGzip(true);
 
         if ($production = $this->input->getOption('production'))
         {
@@ -73,28 +73,23 @@ class BuildCommand extends Command {
 
         foreach ($collections as $name => $collection)
         {
-            if ($production)
-            {
-                $this->build($name, $collection);
-            }
-
-            $this->build($name, $collection);
+            $this->build($name, $production);
         }
     }
 
     /**
-     * Dynamically handle calls to the build methods.
+     * Build methods.
      *
-     * @param  string  $method
-     * @param  array  $parameters
+     * @param  string  $name
+     * @param  boolean $production
      * @return mixed
      */
-    protected function build($name, $collection)
+    protected function build($name, $production = false)
     {
         try
         {
-            if( $filename = $this->manager->addCollection($collection, 'stylesheets')) {
-                $this->cssProduction($filename);
+            if($this->manager->render($name, 'style', $production) !== null)
+            {
                 $this->line('<info>['.$name.']</info> Stylesheets successfully built.');
             }
         }
@@ -105,9 +100,10 @@ class BuildCommand extends Command {
 
         try
         {
-            $this->manager->addCollection($collection, 'javascripts');
-
-            $this->line('<info>['.$name.']</info> Javascripts successfully built.');
+            if($this->manager->render($name, 'script', $production) !== null)
+            {
+                $this->line('<info>['.$name.']</info> Javascripts successfully built.');
+            }
         }
         catch (BuildNotRequiredException $error)
         {

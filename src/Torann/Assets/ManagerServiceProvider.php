@@ -48,10 +48,13 @@ class ManagerServiceProvider extends ServiceProvider {
 		{
 			// Read settings from config file
 			$config = $app->config->get('assets::config', array());
-			$config['public_dir'] = public_path();
+            $config['public_dir'] = public_path();
+
+            // In production?
+            $inProduction = in_array($app['env'], (array) $config['production']);
 
 			// Create instance
-			return new Manager($config);
+			return new Manager($config, $inProduction);
 		});
 
 		$this->registerBladeExtensions();

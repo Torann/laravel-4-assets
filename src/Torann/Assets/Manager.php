@@ -9,31 +9,28 @@ class Manager
 {
 	/**
 	 * Package Config
+     *
 	 * @var array
 	 */
     protected $config = array();
 
 	/**
-	 * Enable assets pipeline (concatenation and minification).
+	 * Production Environment
+     *
 	 * @var bool
 	 */
-	protected $pipeline = false;
-
-	/**
-	 * Absolute path to the public directory of your App (WEBROOT).
-	 * No trailing slash!.
-	 * @var string
-	 */
-	protected $public_dir;
+	protected $production = false;
 
 	/**
 	 * Available collections
+     *
 	 * @var array
 	 */
 	protected $collections = array();
 
 	/**
 	 * Files already added
+     *
 	 * @var array
 	 */
 	protected $assets = array();
@@ -44,6 +41,20 @@ class Manager
      * @var \lessc
      */
     protected $less;
+
+    /**
+     * Indicates if the build will be pre-gzipped.
+     *
+     * @var bool
+     */
+    protected $gzip = false;
+
+    /**
+     * Indicates if the build will be forced.
+     *
+     * @var bool
+     */
+    protected $force = false;
 
     /**
      * Array of allowed asset extensions.
@@ -61,18 +72,18 @@ class Manager
 	 * @param  array $config
 	 * @return void
 	 */
-	function __construct(array $config)
+	function __construct(array $config, $production = false)
 	{
 		// Set config
-		$this->config = $config;
-		$this->pipeline = $config['pipeline'];
-		$this->public_dir = $config['public_dir'];
+		$this->config     = $config;
+		$this->gzip       = $config['gzip'];
+		$this->production = $production;
 
 		// Set collections
 		$this->collections = $config['collections'];
 
 		// Pipeline requires public dir
-		if($this->pipeline and ! is_dir($this->public_dir)) {
+		if($this->production and ! is_dir($this->public_dir)) {
 			throw new \Exception('torann/assets: Public dir not found');
 		}
 
@@ -80,7 +91,7 @@ class Manager
         $this->less = new lessc();
         $this->less->registerFunction('image-url', function($arg) {
             list($type, $delim, $content) = $arg;
-            $content[0] = 'url("' . $this->config['image_url'] . '/' . $content[0] . '")';
+            $content[0] = 'url("' . asset($this->config['image_url'] . '/' . $content[0]) . '")';
             return array($type, '', $content);
         });
 	}
@@ -123,10 +134,12 @@ class Manager
 	/**
 	 * Add from on of more collections
 	 *
-	 * @param  mixed   $asset
-	 * @return string  $name
+	 * @param  mixed    $collections
+	 * @param  string   $extensionType
+	 * @param  boolean  $production (used in the console)
+	 * @return string   $name
 	 */
-	public function render($collections, $extensionType)
+	public function render($collections, $extensionType, $production = false)
 	{
 		$collections = (array) $collections;
 
@@ -144,14 +157,18 @@ class Manager
 			foreach ($this->collections[$collection] as $asset)
 			{
 				$info = pathinfo($asset);
-				if(isset($info['extension'])) {
-					if( in_array(strtolower($info['extension']), $this->allowedExtensions[$extensionType]) ) {
-
-						if( ! $this->isRemoteLink($asset)) {
+				if(isset($info['extension']))
+				{
+					if( in_array(strtolower($info['extension']), $this->allowedExtensions[$extensionType]) )
+					{
+						// Make the link nicer for our local boys
+						if( ! $this->isRemoteLink($asset))
+						{
 							$asset = $this->buildLocalLink($asset, $this->config[$extensionType.'_dir']);
 						}
 
-						if( ! in_array($asset, $this->assets)) {
+						if( ! in_array($asset, $this->assets))
+						{
 							$this->assets[] = $asset;
 						}
 					}
@@ -163,12 +180,12 @@ class Manager
 		}
 
 		// No assets were found
-		if(!$filename) {
-			return '';
+		if( empty($this->assets) ) {
+			return null;
 		}
 
-		// Production
-		if($this->pipeline) {
+		// Production render
+		if($this->production || $production) {
 			return $this->buildAsProduction($filename, $extensionType);
 		}
 
@@ -212,6 +229,32 @@ class Manager
 		return $this->render($collections, 'script');
 	}
 
+    /**
+     * Set built collections to be gzipped.
+     *
+     * @param  bool  $gzip
+     * @return \Torann\Assets\Manager
+     */
+    public function setGzip($gzip)
+    {
+        $this->gzip = $gzip;
+
+        return $this;
+    }
+
+    /**
+     * Set the building to be forced.
+     *
+     * @param  bool  $force
+     * @return \Torann\Assets\Manager
+     */
+    public function setForce($force)
+    {
+        $this->force = $force;
+
+        return $this;
+    }
+
 	/**
 	 * Process the development asset files
 	 *
@@ -251,14 +294,14 @@ class Manager
 		// Filename
 		$fileExt 	= ($type === 'style' ? '.css' : '.js');
 		$file 		= $name . md5(implode($this->assets)).$fileExt;
-		$timestamp 	= (intval($this->pipeline) > 1) ? '?' . $this->pipeline : null;
+		$timestamp 	= null; //(intval($this->production) > 1) ? '?' . $this->production : null;
 
 		// Paths
 		$relative_path = "{$this->config[$type.'_dir']}/$file" . $timestamp;
 		$absolute_path =  $this->public_dir . DIRECTORY_SEPARATOR . $this->config[$type.'_dir'] . DIRECTORY_SEPARATOR . $file;
 
 		// If pipeline exist return it
-		if(file_exists($absolute_path)) {
+		if(file_exists($absolute_path) && $this->force === false) {
 			return HTML::{$type}($relative_path);
 		}
 
@@ -274,7 +317,7 @@ class Manager
 		}
 
 		// Save the asset
-		$this->publishAsset($min, $absolute_path);
+		$this->publishAsset($this->gzip($min), $absolute_path);
 
 		return HTML::{$type}($relative_path);
 	}
@@ -308,6 +351,23 @@ class Manager
 
 		return $buffer;
 	}
+
+    /**
+     * If Gzipping is enabled the the zlib extension is loaded we'll Gzip the contents
+     * with a maximum compression level of 9.
+     *
+     * @param  string  $contents
+     * @return string
+     */
+    protected function gzip($contents)
+    {
+        if ($this->gzip and function_exists('gzencode'))
+        {
+            return gzencode($contents, 9);
+        }
+
+        return $contents;
+    }
 
     /**
      * Publish a single asset

@@ -1,6 +1,7 @@
 <?php
 
 return array(
+
     /*
     |--------------------------------------------------------------------------
     | paths
@@ -89,34 +90,39 @@ return array(
 		]
 	),
 
-	/*
-	|--------------------------------------------------------------------------
-	| Assets pipeline
-	|--------------------------------------------------------------------------
-	|
-	| When enabled, all your assets will be concatenated and minified to a sigle
-	| file, improving load speed and reducing the number of requests that the
-	| browser makes to render a web page.
-	|
-	| It's a good practice to enable it only on production environment.
-	|
-	| Use an integer value greather than 1 to append a timestamp to the URL.
-	|
-	| Default: false
-	*/
+    /*
+    |--------------------------------------------------------------------------
+    | Production Environment
+    |--------------------------------------------------------------------------
+    |
+    | Assets needs to know what your production environment is so that it can
+    | respond with the correct assets. When in production Assets will attempt
+    | to return any built collections. If a collection has not been built
+    | Assets will dynamically route to each asset in the collection and apply
+    | the filters.
+    |
+    | The last method can be very taxing so it's highly recommended that
+    | collections are built when deploying to a production environment.
+    |
+    | You can supply an array of production environment names if you need to.
+    |
+    */
 
-	'pipeline' => false,
+    'production' => array('production', 'prod'),
 
-	/*
-	 | -------------------------------------------------------------------------
-	 | Library Debug Mode
-	 |--------------------------------------------------------------------------
-	 |
-	 | When debug mode is enabled information about the process of loading
-	 | assets will be sent to the log.
-	 |
-	 | Default: false
-	 */
+    /*
+    |--------------------------------------------------------------------------
+    | Gzip Built Collections
+    |--------------------------------------------------------------------------
+    |
+    | To get the most speed and compression out of this package you can enable
+    | Gzip for every collection that is built via the command line. This is
+    | applied to both collection builds and development builds.
+    |
+    | You can use the --gzip switch for on-the-fly Gzipping of collections.
+    |
+    */
 
-	'debug' => false,
+    'gzip' => false,
+
 );
