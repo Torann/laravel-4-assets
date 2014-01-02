@@ -130,8 +130,8 @@ class Manager
 	/**
 	 * Returns a full URL to the given asset.
 	 *
-	 * For example, on production passing '/images/umbrella.jpg' may return
-	 * '/images/umbrella-8b50d865ef2e3469be477e2745c888c5.jpg'
+	 * For example, on production passing 'umbrella.jpg' may return
+	 * '/assets/images/umbrella-8b50d865ef2e3469be477e2745c888c5.jpg'
 	 *
 	 * @param string   $asset
 	 * @param bool     $absolute
@@ -139,6 +139,9 @@ class Manager
 	 */
 	public function image($url, $absolute = false)
 	{
+		// Use deifned image url
+		$url = $this->config['image_url'] . '/' . ltrim($url, '/');
+
 		// Create fingerprint URL
 		if($this->config['fingerprint'] && $this->production) {
 			$url = $this->fingerprint($url);
@@ -280,7 +283,7 @@ class Manager
      */
 	public function lessImageURL($arg) {
         list($type, $delim, $content) = $arg;
-        $content[0] = 'url("' . $this->image($this->config['image_url'] . '/' . $content[0]) . '")';
+        $content[0] = 'url("' . $this->image($content[0]) . '")';
         return array($type, '', $content);
     }
 
