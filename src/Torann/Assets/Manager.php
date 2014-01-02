@@ -36,13 +36,6 @@ class Manager
 	protected $assets = array();
 
     /**
-     * Instance of LESS
-     *
-     * @var \lessc
-     */
-    protected $less;
-
-    /**
      * Indicates if the build will be pre-gzipped.
      *
      * @var bool
@@ -86,10 +79,6 @@ class Manager
 		if($this->production and ! is_dir($this->public_dir)) {
 			throw new \Exception('torann/assets: Public dir not found');
 		}
-
-        // Setup LESS
-        $this->less = new lessc();
-        $this->less->registerFunction('image-url', array($this, 'lessImageURL'));
 	}
 
     /**
@@ -162,6 +151,11 @@ class Manager
 	{
 		$collections = (array) $collections;
 
+		// Render as Production
+		if($production) {
+			$this->production = true;
+		}
+
 		// Reset tracked
 		$this->assets = array();
 
@@ -205,7 +199,7 @@ class Manager
 		}
 
 		// Production render
-		if($this->production || $production) {
+		if($this->production) {
 			return $this->buildAsProduction($identifier, $extensionType);
 		}
 
@@ -286,6 +280,41 @@ class Manager
         $content[0] = 'url("' . $this->image($content[0]) . '")';
         return array($type, '', $content);
     }
+
+	/**
+	 * Create fingerprint for a given URL
+	 *
+	 * @param  string  $url
+	 * @return string
+	 */
+	public function fingerprint($url)
+	{
+		// Get MD5 for the file
+		if ($md5 = $this->getFileMD5($url)) {
+			$parts = pathinfo($url);
+			$dirname = ends_with($parts['dirname'], '/') ? $parts['dirname'] : $parts['dirname'] . '/';
+			$url = "{$dirname}{$parts['filename']}-$md5.{$parts['extension']}";
+		}
+
+		return $url;
+	}
+
+	/**
+	 * Calculates the md5 hash of a given url
+	 *
+	 * @param  string  $url
+	 * @return string|null
+	 */
+	public function getFileMD5($url)
+	{
+		if (starts_with($url, '/')) {
+			$url = substr($url, 1);
+		}
+
+		if (File::exists($url) && File::isFile($url)) {
+			return md5_file($url);
+		}
+	}
 
 	/**
 	 * Process the development asset files
@@ -383,41 +412,6 @@ class Manager
 		return $buffer;
 	}
 
-	/**
-	 * Create fingerprint for a given URL
-	 *
-	 * @param  string  $url
-	 * @return string
-	 */
-	public function fingerprint($url)
-	{
-		// Get MD5 for the file
-		if ($md5 = $this->getFileMD5($url)) {
-			$parts = pathinfo($url);
-			$dirname = ends_with($parts['dirname'], '/') ? $parts['dirname'] : $parts['dirname'] . '/';
-			$url = "{$dirname}{$parts['filename']}-$md5.{$parts['extension']}";
-		}
-
-		return $url;
-	}
-
-	/**
-	 * Calculates the md5 hash of a given url
-	 *
-	 * @param  string  $url
-	 * @return string|null
-	 */
-	public function getFileMD5($url)
-	{
-		if (starts_with($url, '/')) {
-			$url = substr($url, 1);
-		}
-
-		if (File::exists($url) && File::isFile($url)) {
-			return md5_file($url);
-		}
-	}
-
     /**
      * Get the number or name of the current CDN-domain.
      *
@@ -460,6 +454,22 @@ class Manager
         }
 
         return $contents;
+    }
+
+    /**
+     * Compile LESS to CSS
+     *
+     * @param  string  $file
+     * @return string
+     */
+    protected function compileLESS($file)
+    {
+        // Create new LESS instance
+        $less = new lessc();
+        $less->registerFunction('image-url', array($this, 'lessImageURL'));
+
+        // Return CSS
+		return $less->compileFile($file);
     }
 
     /**
@@ -520,7 +530,7 @@ class Manager
 				// Process based on type
 		        switch ($file->getExtension()) {
 		            case 'less':
-		                $contents = $this->less->compileFile($file);
+		                $contents = $this->compileLESS($file);
 		                break;
 		            default:
 		                $contents = file_get_contents($file->getRealPath());
