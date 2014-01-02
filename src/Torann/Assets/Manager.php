@@ -277,8 +277,18 @@ class Manager
      */
 	public function lessImageURL($arg) {
         list($type, $delim, $content) = $arg;
-        $content[0] = 'url("' . $this->image($content[0]) . '")';
-        return array($type, '', $content);
+
+        // How was the arguments sent?
+        switch(count($content)) {
+            case 3:
+                $image = 'url("' . $this->image($content[1][2][0].$content[2]) . '")';
+                break;
+            default:
+                $image = 'url("' . $this->image($content[0]) . '")';
+                break;
+        }
+
+        return array($type, '', array($image));
     }
 
 	/**
