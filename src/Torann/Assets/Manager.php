@@ -207,7 +207,7 @@ class Manager
 		$output = '';
 		foreach($this->assets as $file)
 		{
-			if($relative = $this->buildAsDevelopment($file, $extensionType))
+			if($relative = $this->buildAsDevelopment($file, $extensionType, $identifier))
 			{
 				$output .= HTML::{$extensionType}($relative);
 			}
@@ -222,6 +222,7 @@ class Manager
 	/**
 	 * Build the CSS link tags
      *
+     * @param array $collections The collections to render
      * @return string
      */
 	public function stylesheet()
@@ -235,6 +236,7 @@ class Manager
 	/**
 	 * Build the JavaScript script tags
      *
+     * @param array $collections The collections to render
      * @return string
 	 */
 	public function javascript()
@@ -277,7 +279,8 @@ class Manager
      * @param  array  $arg
      * @return array
      */
-	public function lessImageURL($arg) {
+	public function lessImageURL($arg)
+	{
         list($type, $delim, $content) = $arg;
 
         // How was the arguments sent?
@@ -333,7 +336,7 @@ class Manager
 	 *
 	 * @return string
 	 */
-	protected function buildAsDevelopment($path, $type)
+	protected function buildAsDevelopment($path, $type, $identifier = '')
 	{
 		if($this->isRemoteLink($path)) {
 			return $path;
@@ -344,8 +347,9 @@ class Manager
             return;
         }
 
-        // replace .less extension by .css
-        $file = str_ireplace('.less', '.css', $asset['basename']);
+		// Filename
+		$fileExt = ($type === 'style' ? '.css' : '.js');
+		$file	 = $asset['filename'].'-'.md5($identifier).$fileExt;
 
         // Locations
         $relative_path = "{$this->config[$type.'_dir']}/$file";
@@ -362,11 +366,11 @@ class Manager
 	 *
 	 * @return string
 	 */
-	protected function buildAsProduction($name = '', $type)
+	protected function buildAsProduction($identifier, $type)
 	{
 		// Filename
 		$fileExt 	= ($type === 'style' ? '.css' : '.js');
-		$file 		= $name . md5(implode($this->assets)).$fileExt;
+		$file 		= $identifier . md5(implode($this->assets)).$fileExt;
 
 		// Paths
 		$relative_path = $this->createCDNPath("{$this->config[$type.'_dir']}/$file");
@@ -538,9 +542,10 @@ class Manager
             if (File::isFile($fullPath))
             {
 				$file = new SplFileInfo($fullPath);
+				$ext = $file->getExtension();
 
 				// Process based on type
-		        switch ($file->getExtension()) {
+		        switch ($ext) {
 		            case 'less':
 		                $contents = $this->compileLESS($file);
 		                break;
@@ -550,7 +555,7 @@ class Manager
 
 		        return array(
 		        	'contents' => $contents,
-					'basename' => $file->getBasename()
+					'filename' => $file->getBasename(".{$ext}")
 				);
             }
         }
