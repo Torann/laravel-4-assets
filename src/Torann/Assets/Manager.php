@@ -222,11 +222,12 @@ class Manager
 	/**
 	 * Build the CSS link tags
      *
-     * @param array $collections The collections to render
      * @return string
      */
-	public function stylesheet($collections = array())
+	public function stylesheet()
 	{
+		$collections = func_get_args();
+
 		// Render Collection
 		return $this->render($collections, 'style');
 	}
@@ -234,11 +235,12 @@ class Manager
 	/**
 	 * Build the JavaScript script tags
      *
-     * @param array $collections The collections to render
      * @return string
 	 */
-	public function javascript($collections = array())
+	public function javascript()
 	{
+		$collections = func_get_args();
+
 		// Render Collection
 		return $this->render($collections, 'script');
 	}
