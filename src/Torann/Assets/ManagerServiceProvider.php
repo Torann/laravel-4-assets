@@ -87,14 +87,6 @@ class ManagerServiceProvider extends ServiceProvider {
 
             return preg_replace($matcher, '$1<?php echo Assets::stylesheet$2; ?>', $value);
         });
-
-        // Image Asset extension
-        $blade->extend(function($value, $compiler)
-        {
-            $matcher = $compiler->createMatcher('image_url');
-
-            return preg_replace($matcher, '$1<?php echo Assets::image$2; ?>', $value);
-        });
     }
 
     /**
