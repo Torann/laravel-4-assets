@@ -163,34 +163,23 @@ class Manager
 
 		foreach ($collections as $collection)
 		{
-			if( !isset($this->collections[$collection])) {
-				continue;
-			}
-
-			foreach ($this->collections[$collection] as $asset)
+			if( !isset($this->collections[$collection]))
 			{
-				$extension = strtolower(pathinfo($asset, PATHINFO_EXTENSION));
-
-				if($extension)
-				{
-					if( in_array($extension, $this->allowedExtensions[$extensionType]) )
-					{
-						// Make the link nicer for our local boys
-						if( ! $this->isRemoteLink($asset))
-						{
-							$asset = $this->buildLocalLink($asset, $this->config[$extensionType.'_dir']);
-						}
-
-						if( ! in_array($asset, $this->assets))
-						{
-							$this->assets[] = $asset;
-						}
-					}
+				if( ! $this->includeAsset($collection, $extensionType) ) {
+					continue;
 				}
+
+				// Create a proper identifier name
+				$identifier .= str_replace(['.js','.css'], '', basename($collection)).'-';
 			}
+			else {
+				foreach ($this->collections[$collection] as $asset)
+				{
+					$this->includeAsset($asset, $extensionType);
+				}
 
-			$identifier .= "$collection-";
-
+				$identifier .= "$collection-";
+			}
 		}
 
 		// No assets were found
@@ -328,6 +317,34 @@ class Manager
 
 		if (File::exists($url) && File::isFile($url)) {
 			return md5_file($url);
+		}
+	}
+
+    /**
+     * Add asset if not already added.
+     *
+     * @param  string  $asset
+     * @return void
+     */
+    protected function includeAsset( $asset, $extensionType )
+    {
+		if( $extension = strtolower(pathinfo($asset, PATHINFO_EXTENSION)) )
+		{
+			if( in_array($extension, $this->allowedExtensions[$extensionType]) )
+			{
+				// Make the link nicer for our local boys
+				if( ! $this->isRemoteLink($asset))
+				{
+					$asset = $this->buildLocalLink($asset, $this->config[$extensionType.'_dir']);
+				}
+
+				if( ! in_array($asset, $this->assets))
+				{
+					$this->assets[] = $asset;
+				}
+
+				return true;
+			}
 		}
 	}
 
