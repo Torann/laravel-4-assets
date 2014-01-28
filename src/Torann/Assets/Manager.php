@@ -366,7 +366,7 @@ class Manager
 
 		// Filename
 		$fileExt = ($type === 'style' ? '.css' : '.js');
-		$file	 = $asset['filename'].'-'.md5($identifier).$fileExt;
+		$file	 = $asset['filename'].'-'.md5($path).$fileExt;
 
         // Locations
         $relative_path = "{$this->config[$type.'_dir']}/$file";
