@@ -31,16 +31,24 @@ class BuildCommand extends Command {
     protected $manager;
 
     /**
+     * Illuminate filesystem instance.
+     *
+     * @var \Illuminate\Filesystem\Filesystem
+     */
+    protected $files;
+
+    /**
      * Create a new asset compile command instance.
      *
      * @param  \Torann\Assets\Manager  $manager
      * @return void
      */
-    public function __construct(Manager $manager)
+    public function __construct(Manager $manager, $files)
     {
         parent::__construct();
 
-        $this->manager = $manager;
+        $this->manager  = $manager;
+        $this->files    = $files;
     }
 
     /**
@@ -57,6 +65,8 @@ class BuildCommand extends Command {
         if ($production = $this->input->getOption('production'))
         {
             $this->comment('Starting production build...');
+
+            $this->tidyProductionFiles();
         }
         else
         {
@@ -75,6 +85,25 @@ class BuildCommand extends Command {
         {
             $this->build($name, $production);
         }
+    }
+
+    /**
+     * Removes old assets.
+     *
+     * @return void
+     */
+    protected function tidyProductionFiles()
+    {
+        $this->line('');
+        // Remove stylesheets
+        $this->deleteMatchingFiles($this->manager->public_dir . '/' . $this->manager->style_dir.'/*.css');
+        $this->line('<info>Stylesheets</info> tidied up.');
+
+        // Remove javascript
+        $this->deleteMatchingFiles($this->manager->public_dir . '/' . $this->manager->script_dir.'/*.js');
+        $this->line('<info>Javascripts</info> tidied up.');
+
+        $this->line('');
     }
 
     /**
@@ -143,6 +172,25 @@ class BuildCommand extends Command {
         $this->line('');
 
         return $collections;
+    }
+
+    /**
+     * Delete matching files from the wildcard glob search except the ignored file.
+     *
+     * @param  string  $wildcard
+     * @param  array|string  $ignored
+     * @return void
+     */
+    protected function deleteMatchingFiles($wildcard)
+    {
+        if (is_array($files = $this->files->glob($wildcard)))
+        {
+            foreach ($files as $path)
+            {
+                $this->files->delete($path);
+            }
+        }
+
     }
 
     /**

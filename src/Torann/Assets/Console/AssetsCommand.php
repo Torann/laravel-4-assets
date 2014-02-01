@@ -47,8 +47,8 @@ class AssetsCommand extends Command {
     {
         parent::__construct();
 
-        $this->manager = $manager;
-        $this->files = $files;
+        $this->manager  = $manager;
+        $this->files    = $files;
     }
 
     /**
@@ -78,23 +78,11 @@ class AssetsCommand extends Command {
      */
     protected function tidyUpFilesystem()
     {
-        $collections = array_keys($this->manager->all());
+        // Remove stylesheets
+        $this->deleteMatchingFiles($this->manager->public_dir . '/' . $this->manager->style_dir.'/*.css');
 
-        foreach ($collections as $collection)
-        {
-            if ($this->input->getOption('verbose'))
-            {
-                $this->line('['.$collection.'] Cleaning up files.');
-            }
-
-            // Remove stylesheets
-            $this->deleteMatchingFiles($this->manager->public_dir . '/' . $this->manager->stylesheets_dir.'/'.$collection.'*.css');
-
-            // Remove javascript
-            $this->deleteMatchingFiles($this->manager->public_dir . '/' . $this->manager->javascripts_dir.'/'.$collection.'*.js');
-        }
-
-        $this->input->getOption('verbose') and $this->line('');
+        // Remove javascript
+        $this->deleteMatchingFiles($this->manager->public_dir . '/' . $this->manager->script_dir.'/*.js');
 
         $this->info('The filesystem have been tidied up.');
     }
@@ -129,4 +117,5 @@ class AssetsCommand extends Command {
         }
 
     }
+
 }

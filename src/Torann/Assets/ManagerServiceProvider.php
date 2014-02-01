@@ -125,7 +125,7 @@ class ManagerServiceProvider extends ServiceProvider {
     {
         $this->app['command.torann.assets.build'] = $this->app->share(function($app)
         {
-            return new BuildCommand($app['torann.assets']);
+            return new BuildCommand($app['torann.assets'], $app['files']);
         });
     }
 
