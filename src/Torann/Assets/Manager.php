@@ -199,9 +199,9 @@ class Manager
 			if($relative = $this->buildAsDevelopment($file, $extensionType, $identifier))
 			{
 				// Create fingerprint URL
-				if( $this->config['fingerprint'] ) {
-					$relative = $this->fingerprint($relative);
-				}
+				// if( $this->config['fingerprint'] ) {
+				// 	$relative = $this->fingerprint($relative);
+				// }
 
 				$output .= HTML::{$extensionType}($relative);
 			}
@@ -395,7 +395,7 @@ class Manager
 	{
 		// Filename
 		$fileExt 	= ($type === 'style' ? '.css' : '.js');
-		$file 		= rtrim($identifier, '-').$fileExt;
+		$file 		= $identifier . md5(implode($this->assets)).$fileExt;
 
 		// Paths
 		$relative_path = $this->createCDNPath("{$this->config[$type.'_dir']}/$file");
@@ -404,10 +404,10 @@ class Manager
 		// If pipeline exist return it
 		if(file_exists($absolute_path) && $this->force === false)
 		{
-			// Create fingerprint URL
-			if( $this->config['fingerprint'] ) {
-				$relative_path = $this->fingerprint($relative_path);
-			}
+			// // Create fingerprint URL
+			// if( $this->config['fingerprint'] ) {
+			// 	$relative_path = $this->fingerprint($relative_path);
+			// }
 
 			return HTML::{$type}($relative_path);
 		}
