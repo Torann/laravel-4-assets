@@ -198,6 +198,11 @@ class Manager
 		{
 			if($relative = $this->buildAsDevelopment($file, $extensionType, $identifier))
 			{
+				// Create fingerprint URL
+				if( $this->config['fingerprint'] ) {
+					$relative = $this->fingerprint($relative);
+				}
+
 				$output .= HTML::{$extensionType}($relative);
 			}
 			else {
@@ -315,8 +320,11 @@ class Manager
 			$url = substr($url, 1);
 		}
 
-		if (File::exists($url) && File::isFile($url)) {
-			return md5_file($url);
+		// Create absolute path
+		$absolute = public_path() . "/{$url}";
+
+		if (File::exists($absolute) && File::isFile($absolute)) {
+			return md5_file($absolute);
 		}
 	}
 
@@ -366,7 +374,7 @@ class Manager
 
 		// Filename
 		$fileExt = ($type === 'style' ? '.css' : '.js');
-		$file	 = $asset['filename'].'-'.md5($path).$fileExt;
+		$file	 = $asset['filename'].$fileExt;
 
         // Locations
         $relative_path = "{$this->config[$type.'_dir']}/$file";
@@ -387,14 +395,20 @@ class Manager
 	{
 		// Filename
 		$fileExt 	= ($type === 'style' ? '.css' : '.js');
-		$file 		= $identifier . md5(implode($this->assets)).$fileExt;
+		$file 		= rtrim($identifier, '-').$fileExt;
 
 		// Paths
 		$relative_path = $this->createCDNPath("{$this->config[$type.'_dir']}/$file");
 		$absolute_path =  $this->public_dir . DIRECTORY_SEPARATOR . $this->config[$type.'_dir'] . DIRECTORY_SEPARATOR . $file;
 
 		// If pipeline exist return it
-		if(file_exists($absolute_path) && $this->force === false) {
+		if(file_exists($absolute_path) && $this->force === false)
+		{
+			// Create fingerprint URL
+			if( $this->config['fingerprint'] ) {
+				$relative_path = $this->fingerprint($relative_path);
+			}
+
 			return HTML::{$type}($relative_path);
 		}
 
@@ -552,8 +566,8 @@ class Manager
      */
     protected function findAsset($path)
     {
-        foreach ($this->config['paths'] as $searchPath) {
-
+        foreach ($this->config['paths'] as $searchPath)
+        {
             $fullPath = base_path() . '/' . $searchPath . '/' . $path;
 
             if (File::isFile($fullPath))
@@ -571,8 +585,8 @@ class Manager
 		        }
 
 		        return array(
-		        	'contents' => $contents,
-					'filename' => $file->getBasename(".{$ext}")
+		        	'contents'  => $contents,
+					'filename'  => $file->getBasename(".{$ext}")
 				);
             }
         }
