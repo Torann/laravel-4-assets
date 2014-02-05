@@ -1,6 +1,6 @@
 <?php namespace Torann\Assets;
 
-use Illuminate\Support\Facades\File;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\HTML;
 use SplFileInfo;
 use lessc;
@@ -36,18 +36,19 @@ class Manager
 	protected $assets = array();
 
     /**
-     * Indicates if the build will be pre-gzipped.
+     * Assets manifest instance.
      *
-     * @var bool
+     * @var \Torann\Assets\Manifest
      */
-    protected $gzip = false;
+    protected $manifest;
 
     /**
-     * Indicates if the build will be forced.
+     * Illuminate filesystem instance.
      *
-     * @var bool
+     * @var \Illuminate\Filesystem\Filesystem
      */
-    protected $force = false;
+    protected $files;
+
 
     /**
      * Array of allowed asset extensions.
@@ -63,22 +64,21 @@ class Manager
 	 * Class constructor.
 	 *
 	 * @param  array $config
+     * @param  \Illuminate\Filesystem\Filesystem  $files
+     * @param  \Torann\Assets\Manifest  $manifest
+     * @param  bool  $production
 	 * @return void
 	 */
-	function __construct(array $config, $production = false)
+	function __construct(array $config, Filesystem $files, Manifest $manifest, $production = false)
 	{
 		// Set config
 		$this->config     = $config;
-		$this->gzip       = $config['gzip'];
 		$this->production = $production;
 
 		// Set collections
 		$this->collections = $config['collections'];
-
-		// Pipeline requires public dir
-		if($this->production and ! is_dir($this->public_dir)) {
-			throw new \Exception('torann/assets: Public dir not found');
-		}
+		$this->manifest = $manifest;
+		$this->files = $files;
 	}
 
     /**
@@ -188,7 +188,8 @@ class Manager
 		}
 
 		// Production render
-		if($this->production) {
+		if($this->production)
+		{
 			return $this->buildAsProduction($identifier, $extensionType);
 		}
 
@@ -198,11 +199,6 @@ class Manager
 		{
 			if($relative = $this->buildAsDevelopment($file, $extensionType, $identifier))
 			{
-				// Create fingerprint URL
-				// if( $this->config['fingerprint'] ) {
-				// 	$relative = $this->fingerprint($relative);
-				// }
-
 				$output .= HTML::{$extensionType}($relative);
 			}
 			else {
@@ -240,32 +236,6 @@ class Manager
 		// Render Collection
 		return $this->render($collections, 'script');
 	}
-
-    /**
-     * Set built collections to be gzipped.
-     *
-     * @param  bool  $gzip
-     * @return \Torann\Assets\Manager
-     */
-    public function setGzip($gzip)
-    {
-        $this->gzip = $gzip;
-
-        return $this;
-    }
-
-    /**
-     * Set the building to be forced.
-     *
-     * @param  bool  $force
-     * @return \Torann\Assets\Manager
-     */
-    public function setForce($force)
-    {
-        $this->force = $force;
-
-        return $this;
-    }
 
     /**
      * Custom LESS function to process images.
@@ -323,7 +293,7 @@ class Manager
 		// Create absolute path
 		$absolute = public_path() . "/{$url}";
 
-		if (File::exists($absolute) && File::isFile($absolute)) {
+		if ($this->files->exists($absolute) && $this->files->isFile($absolute)) {
 			return md5_file($absolute);
 		}
 	}
@@ -393,24 +363,21 @@ class Manager
 	 */
 	protected function buildAsProduction($identifier, $type)
 	{
-		// Filename
-		$fileExt 	= ($type === 'style' ? '.css' : '.js');
-		$file 		= $identifier . md5(implode($this->assets)).$fileExt;
+		$fileExt    = ($type === 'style' ? '.css' : '.js');
+		$identifier = rtrim($identifier, '-');
 
-		// Paths
-		$relative_path = $this->createCDNPath("{$this->config[$type.'_dir']}/$file");
-		$absolute_path =  $this->public_dir . DIRECTORY_SEPARATOR . $this->config[$type.'_dir'] . DIRECTORY_SEPARATOR . $file;
-
-		// If pipeline exist return it
-		if(file_exists($absolute_path) && $this->force === false)
+		// Already created?
+		if($fingerprint = $this->manifest->get( $type, $identifier ))
 		{
-			// // Create fingerprint URL
-			// if( $this->config['fingerprint'] ) {
-			// 	$relative_path = $this->fingerprint($relative_path);
-			// }
-
-			return HTML::{$type}($relative_path);
+			if( $tag = $this->renderTag($identifier.'-'.$fingerprint.$fileExt, $type) )
+			{
+				return $tag;
+			}
 		}
+
+		// Filename
+		$fingerprint  = md5(implode($this->assets) . date("Y-m-d H:i:s"));
+		$file         = $identifier.'-'.$fingerprint.$fileExt;
 
 		// Concatenate files
 		$buffer = $this->buildBuffer($this->assets);
@@ -424,8 +391,27 @@ class Manager
 		}
 
 		// Save the asset
-		$this->publishAsset($this->gzip($min), $absolute_path);
+		$absolute_path = $this->public_dir . DIRECTORY_SEPARATOR . $this->config[$type.'_dir'] . DIRECTORY_SEPARATOR . $file;
+		$this->publishAsset($min, $absolute_path);
 
+		// Add to maifest
+		$this->manifest->make( $type, $identifier, $fingerprint );
+
+		return $this->renderTag($file, $type);
+	}
+
+	/**
+	 * Build link to local asset
+	 *
+	 * Detects packages links
+	 *
+	 * @param  string $file
+	 * @param  string $type
+	 * @return string HTML Tag
+	 */
+	protected function renderTag($file, $type)
+	{
+		$relative_path = $this->createCDNPath("{$this->config[$type.'_dir']}/$file");
 		return HTML::{$type}($relative_path);
 	}
 
@@ -487,23 +473,6 @@ class Manager
     }
 
     /**
-     * If Gzipping is enabled the the zlib extension is loaded we'll Gzip the contents
-     * with a maximum compression level of 9.
-     *
-     * @param  string  $contents
-     * @return string
-     */
-    protected function gzip($contents)
-    {
-        if ($this->gzip and function_exists('gzencode'))
-        {
-            return gzencode($contents, 9);
-        }
-
-        return $contents;
-    }
-
-    /**
      * Compile LESS to CSS
      *
      * @param  string  $file
@@ -530,11 +499,11 @@ class Manager
     {
         // Prepare target directory
         if ( ! file_exists(dirname($absolute))) {
-            File::makeDirectory(dirname($absolute), 0777, true);
+            $this->files->makeDirectory(dirname($absolute), 0777, true);
         }
 
         // Create the asset file
-        File::put($absolute, $contents);
+        $this->files->put($absolute, $contents);
     }
 
 	/**
@@ -570,7 +539,7 @@ class Manager
         {
             $fullPath = base_path() . '/' . $searchPath . '/' . $path;
 
-            if (File::isFile($fullPath))
+            if ($this->files->isFile($fullPath))
             {
 				$file = new SplFileInfo($fullPath);
 				$ext = $file->getExtension();

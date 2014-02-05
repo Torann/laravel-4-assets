@@ -103,21 +103,6 @@ return array(
 
     /*
     |--------------------------------------------------------------------------
-    | Gzip Built Collections
-    |--------------------------------------------------------------------------
-    |
-    | To get the most speed and compression out of this package you can enable
-    | Gzip for every collection that is built via the command line. This is
-    | applied to both collection builds and development builds.
-    |
-    | You can use the --gzip switch for on-the-fly Gzipping of collections.
-    |
-    */
-
-    'gzip' => false,
-
-    /*
-    |--------------------------------------------------------------------------
     | Fingerprinting
     |--------------------------------------------------------------------------
     |
@@ -132,7 +117,7 @@ return array(
     |
     */
 
-    'fingerprint' => true,
+    'fingerprint' => false,
 
     /*
     |--------------------------------------------------------------------------

@@ -34,6 +34,10 @@ class ManagerServiceProvider extends ServiceProvider {
 
 		// Add 'Assets' facade alias
 		AliasLoader::getInstance()->alias('Assets', 'Torann\Assets\Facade');
+
+        // Load the local manifest that contains the fingerprinted
+        // paths to production builds.
+        $this->app['torann.manifest']->load();
 	}
 
 	/**
@@ -43,25 +47,50 @@ class ManagerServiceProvider extends ServiceProvider {
 	 */
 	public function register()
 	{
-		// Bind 'torann.assets' shared component to the IoC container
-		$this->app->singleton('torann.assets', function($app)
-		{
-			// Read settings from config file
-			$config = $app->config->get('assets::config', array());
-            $config['public_dir'] = public_path();
+        $this->registerManifest();
 
-            // In production?
-            $inProduction = in_array($app['env'], (array) $config['production']);
-
-			// Create instance
-			return new Manager($config, $inProduction);
-		});
+        $this->registerAssets();
 
 		$this->registerBladeExtensions();
 
 		$this->registerCommands();
 	}
 
+    /**
+     * Register the asset manager.
+     *
+     * @return void
+     */
+    protected function registerAssets()
+    {
+        $this->app->singleton('torann.assets', function($app)
+        {
+            // Read settings from config file
+            $config = $app->config->get('assets::config', array());
+            $config['public_dir'] = public_path();
+
+            // In production?
+            $inProduction = in_array($app['env'], (array) $config['production']);
+
+            // Create instance
+            return new Manager($config, $app['files'], $app['torann.manifest'], $inProduction);
+        });
+    }
+
+    /**
+     * Register the collection repository.
+     *
+     * @return void
+     */
+    protected function registerManifest()
+    {
+        $this->app['torann.manifest'] = $this->app->share(function($app)
+        {
+            $meta = $app['config']->get('app.manifest');
+
+            return new Manifest($app['files'], $meta);
+        });
+    }
 
     /**
      * Register the Blade extensions with the compiler.
@@ -112,7 +141,7 @@ class ManagerServiceProvider extends ServiceProvider {
     {
         $this->app['command.torann.assets'] = $this->app->share(function($app)
         {
-            return new AssetsCommand($app['torann.assets'], $app['files']);
+            return new AssetsCommand($app['torann.assets'], $app['files'], $app['torann.manifest']);
         });
     }
 
@@ -125,7 +154,7 @@ class ManagerServiceProvider extends ServiceProvider {
     {
         $this->app['command.torann.assets.build'] = $this->app->share(function($app)
         {
-            return new BuildCommand($app['torann.assets'], $app['files']);
+            return new BuildCommand($app['torann.assets'], $app['files'], $app['torann.manifest']);
         });
     }
 

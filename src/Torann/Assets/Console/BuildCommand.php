@@ -1,9 +1,14 @@
 <?php namespace Torann\Assets\Console;
 
 use RuntimeException;
+
 use Torann\Assets\Manager;
-use Illuminate\Console\Command;
+use Torann\Assets\Manifest;
 use Torann\Assets\Exceptions\BuildNotRequiredException;
+
+use Illuminate\Filesystem\Filesystem;
+
+use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 
@@ -38,17 +43,27 @@ class BuildCommand extends Command {
     protected $files;
 
     /**
+     * Assets manifest instance.
+     *
+     * @var \Torann\Assets\Manifest
+     */
+    protected $manifest;
+
+    /**
      * Create a new asset compile command instance.
      *
      * @param  \Torann\Assets\Manager  $manager
+     * @param  \Illuminate\Filesystem\Filesystem  $files
+     * @param  \Torann\Assets\Manifest  $manifest
      * @return void
      */
-    public function __construct(Manager $manager, $files)
+    public function __construct(Manager $manager, Filesystem $files, Manifest $manifest)
     {
         parent::__construct();
 
         $this->manager  = $manager;
         $this->files    = $files;
+        $this->manifest = $manifest;
     }
 
     /**
@@ -58,10 +73,6 @@ class BuildCommand extends Command {
      */
     public function fire()
     {
-        $this->input->getOption('force') and $this->manager->setForce(true);
-
-        $this->input->getOption('gzip') and $this->manager->setGzip(true);
-
         if ($production = $this->input->getOption('production'))
         {
             $this->comment('Starting production build...');
@@ -74,12 +85,6 @@ class BuildCommand extends Command {
         }
 
         $collections = $this->gatherCollections();
-
-        if ($this->input->getOption('gzip') and ! function_exists('gzencode'))
-        {
-            $this->error('[gzip] Build will not use Gzip as the required dependencies are not available.');
-            $this->line('');
-        }
 
         foreach ($collections as $name => $collection)
         {
@@ -95,6 +100,11 @@ class BuildCommand extends Command {
     protected function tidyProductionFiles()
     {
         $this->line('');
+
+        // Remove manifest file
+        $this->manifest->delete();
+        $this->line('<info>Manifest File</info> tidied up.');
+
         // Remove stylesheets
         $this->deleteMatchingFiles($this->manager->public_dir . '/' . $this->manager->style_dir.'/*.css');
         $this->line('<info>Stylesheets</info> tidied up.');
@@ -213,9 +223,7 @@ class BuildCommand extends Command {
     protected function getOptions()
     {
         return array(
-            array('production', 'p', InputOption::VALUE_NONE, 'Build assets for a production environment'),
-            array('gzip', null, InputOption::VALUE_NONE, 'Gzip built assets'),
-            array('force', 'f', InputOption::VALUE_NONE, 'Forces a re-build of the collection')
+            array('production', 'p', InputOption::VALUE_NONE, 'Build assets for a production environment')
         );
     }
 
