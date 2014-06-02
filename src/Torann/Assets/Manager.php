@@ -3,7 +3,7 @@
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\HTML;
 use SplFileInfo;
-use lessc;
+use Less_Parser;
 
 class Manager
 {
@@ -245,19 +245,7 @@ class Manager
      */
 	public function lessImageURL($arg)
 	{
-        list($type, $delim, $content) = $arg;
-
-        // How was the arguments sent?
-        switch(count($content)) {
-            case 3:
-                $image = 'url("' . $this->image($content[1][2][0].$content[2]) . '")';
-                break;
-            default:
-                $image = 'url("' . $this->image($content[0]) . '")';
-                break;
-        }
-
-        return array($type, '', array($image));
+        return 'url("' . $this->image($arg[1]) . '")';
     }
 
 	/**
@@ -481,11 +469,17 @@ class Manager
     protected function compileLESS($file)
     {
         // Create new LESS instance
-        $less = new lessc();
-        $less->registerFunction('image-url', array($this, 'lessImageURL'));
+        $parser = new Less_Parser();
 
         // Return CSS
-		return $less->compileFile($file);
+        $parser->parseFile($file);
+        $css = $parser->getCss();
+
+        // This will be deprecated in the the future
+        // The method 'registerFunction' was removed in teh LESS package.
+        $css = preg_replace_callback('/image-url\(\s*[\'"]?(\S*[^\'"])[\'"]?\s*\)[^;}]*?/i', array($this, 'lessImageURL'), $css);
+
+        return $css;
     }
 
     /**
